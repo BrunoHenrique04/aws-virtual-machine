@@ -1,7 +1,5 @@
-# PROVIDER
 terraform {
-
-  required_version = "~> 1.12.2"
+  required_version = "~> 1.12.1"
 
   required_providers {
     aws = {
@@ -10,11 +8,18 @@ terraform {
     }
   }
 
+  backend "s3" {
+    bucket       = var.UnicBucketName
+    key          = "tfstate/terraform.tfstate"
+    region       = "us-east-1"
+    dynamodb_table = "terraform-locks" # opcional, mas recomendado para evitar concorrência
+  }
 }
 
 provider "aws" {
-  region                   = "us-east-1"
-  shared_config_files      = [".aws/config"]
-  shared_credentials_files = [".aws/credentials"]
-  profile                  = "iac"
+  region = "us-east-1"
+  # Se quiser usar perfil local, descomente:
+  # shared_config_files      = [".aws/config"]
+  # shared_credentials_files = [".aws/credentials"]
+  # profile                  = "iac"
 }

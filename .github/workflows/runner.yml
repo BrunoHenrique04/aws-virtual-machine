@@ -1,7 +1,5 @@
 name: Terraform Pipeline
 
-##Config var yml
-
 on:
   push:
     branches:
@@ -14,7 +12,6 @@ env:
   TF_VAR_bucketEnv: "dev"
 
 jobs:
-
   tf-aws:
     name: AWS provider
     runs-on: ubuntu-latest
@@ -37,32 +34,31 @@ jobs:
         aws-session-token    : ${{ secrets.AWS_SESSION_TOKEN }}
         aws-region           : us-east-1
 
-    - name: Step 04 - Terraform Init
-      run: terraform -chdir=./terraform init -backend-config="bucket=${TF_VAR_UnicBucketName}"
-
-      
-
-    - name: Step 05 - Terraform Validate
-      run : terraform -chdir=./terraform validate
-
-    - name: Step 06 - Terraform Plan
-      run : terraform -chdir=./terraform plan -out tfplan
-
-    - name: Step 06.1 - Import bucket if exists
+    - name: Step 03.1 - Ensure backend bucket exists
       run: |
-        if aws s3api head-bucket --bucket $TF_VAR_UnicBucketName 2>/dev/null; then
-          echo "Bucket já existe, importando para o Terraform..."
-          terraform -chdir=./terraform import aws_s3_bucket.unic_bucket $TF_VAR_UnicBucketName || true
+        if ! aws s3api head-bucket --bucket $TF_VAR_UnicBucketName 2>/dev/null; then
+          echo "Criando bucket de backend..."
+          aws s3 mb s3://$TF_VAR_UnicBucketName --region us-east-1
         else
-          echo "Bucket não existe, será criado pelo Terraform."
+          echo "Bucket de backend já existe"
         fi
 
-    - name: Step 07 - Terraform Apply
-      run : terraform -chdir=./terraform apply tfplan
+    - name: Step 04 - Terraform Init
+      run: |
+        terraform -chdir=./terraform init \
+          -backend-config="bucket=${TF_VAR_UnicBucketName}" \
+          -backend-config="key=tfstate/terraform.tfstate" \
+          -backend-config="region=us-east-1" \
+          -backend-config="use_lockfile=true"
 
+    - name: Step 05 - Terraform Validate
+      run: terraform -chdir=./terraform validate
+
+    - name: Step 06 - Terraform Plan
+      run: terraform -chdir=./terraform plan -out tfplan
 
     - name: Step 07 - Terraform Apply
-      run : terraform -chdir=./terraform apply tfplan
+      run: terraform -chdir=./terraform apply -auto-approve tfplan
 
     - name: Step 08 - Terraform Show
-      run : terraform -chdir=./terraform show
+      run: terraform -chdir=./terraform show

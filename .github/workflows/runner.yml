@@ -38,7 +38,10 @@ jobs:
         aws-region           : us-east-1
 
     - name: Step 04 - Terraform Init
-      run : terraform -chdir=./terraform init
+      run: terraform -chdir=./terraform init \
+        -backend-config="bucket=${TF_VAR_UnicBucketName}"
+
+      
 
     - name: Step 05 - Terraform Validate
       run : terraform -chdir=./terraform validate

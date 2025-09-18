@@ -7,19 +7,21 @@ resource "aws_instance" "instance" {
   vpc_security_group_ids = var.security_group_ids
   user_data_base64       = base64encode(var.user_data)
 
-  precondition {
-    condition     = length(var.security_group_ids) > 0
-    error_message = "Ao menos um security group deve ser informado."
-  }
+  lifecycle {
+    precondition {
+      condition     = length(var.security_group_ids) > 0
+      error_message = "Ao menos um security group deve ser informado."
+    }
 
-  precondition {
-    condition     = can(regex("^subnet-", var.subnet_id))
-    error_message = "subnet_id inválido."
-  }
+    precondition {
+      condition     = can(regex("^subnet-", var.subnet_id))
+      error_message = "subnet_id inválido."
+    }
 
-  precondition {
-    condition     = length(var.user_data) <= 16384
-    error_message = "user_data excede o limite de 16KB."
+    precondition {
+      condition     = length(var.user_data) <= 16384
+      error_message = "user_data excede o limite de 16KB."
+    }
   }
 }
 
